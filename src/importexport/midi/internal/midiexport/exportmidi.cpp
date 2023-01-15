@@ -24,6 +24,7 @@
 
 #include "libmscore/key.h"
 #include "libmscore/masterscore.h"
+#include "libmscore/measure.h"
 #include "libmscore/note.h"
 #include "libmscore/part.h"
 #include "libmscore/repeatlist.h"
@@ -326,7 +327,27 @@ bool ExportMidi::write(QIODevice* device, bool midiExpandRepeats, bool exportRPN
                         continue;
                     }
 
-                    if (event.type() == ME_NOTEON) {
+                    if (event.type() == ME_NOTEON && event.note() != NULL) {  // LEF: Not sure why this is ever null but it has been at times, in multi-repeat volta
+                         // Add measure metadata to file from real measure numbers not accumulated measures inflated by repeats, allows player to display measure number matching score
+
+                        Note* n = (Note*) event.note();
+                        int displayedMeasureNumber = ( (Measure*) ((EngravingItem*)(n))->findMeasure() )->no() + ((Measure*)((EngravingItem*)(n))->findMeasure())->noOffset() + 1;
+                        if(displayedMeasureNumber != lastMeasureNoOutput && event.velo()>0 )  // Only do for noteon (musescore calls everything noteon, so check velocity)
+                        {   // Output a meta type marker showing the displayed measure number for consumption by midi players to map back to printed page
+                            MidiEvent ev;
+                            ev.setType(ME_META);
+                            ev.setMetaType(META_MARKER);
+                            char temp[100];
+                            snprintf(temp,sizeof(temp),"Measure %d",displayedMeasureNumber);
+                            unsigned char* marker = new unsigned char[strlen(temp)];  // ?? What will release this storage later?
+                            memcpy(marker, temp, strlen(temp) + 1);
+                            ev.setEData(marker);
+                            ev.setLen(strlen(temp) + 1);
+                            track.insert(i->first, ev);
+                            lastMeasureNoOutput = displayedMeasureNumber;
+                        }
+
+
                         // use the note values instead of the event values if portamento is suppressed
                         if (!exportRPNs && event.portamento()) {
                             track.insert(m_pauseMap.addPauseTicks(i->first), MidiEvent(ME_NOTEON, channel,

@@ -70,6 +70,7 @@ private:
     MidiFile m_midiFile;
     engraving::Score* m_score = nullptr;
     PauseMap m_pauseMap;
+    int lastMeasureNoOutput = -1;
 };
 }
 #endif // EXPORTMIDI_H

@@ -1668,7 +1668,8 @@ bool Note::readProperties(XmlReader& e)
     } else if (tag == "head") {
         readProperty(e, Pid::HEAD_GROUP);
     } else if (tag == "velocity") {
-        setUserVelocity(e.readInt());
+        int v = e.readInt();
+        setUserVelocity(v == 0 ? 64 : (v < 40 ? 64 + (64*v/100.00) : v));   //  As a temporary workaround for moving 3.x to 4.x, interpret any v< 40 as an offset and pre-calculate it as a percentage offset
     } else if (tag == "play") {
         setPlay(e.readInt());
     } else if (tag == "tuning") {
@@ -2814,7 +2815,7 @@ int Note::playingOctave() const
 
 int Note::customizeVelocity(int velo) const
 {
-    if (_veloType == VeloType::OFFSET_VAL) {
+    if ( (_veloType == VeloType::OFFSET_VAL) || (velo <= 40)) {   // as a workaround to lack of offset support in 4.x, assume anything < 40 is an offset
         velo = velo + (velo * userVelocity()) / 100;
     } else if (_veloType == VeloType::USER_VAL) {
         velo = userVelocity();
