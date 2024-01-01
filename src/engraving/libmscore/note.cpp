@@ -2816,7 +2816,7 @@ int Note::playingOctave() const
 int Note::customizeVelocity(int velo) const
 {
     if ( (_veloType == VeloType::OFFSET_VAL) || (velo <= 40)) {   // as a workaround to lack of offset support in 4.x, assume anything < 40 is an offset
-        velo = velo + (velo * userVelocity()) / 100;
+        velo = velo + (velo * userVelocity()) / 100.00;
     } else if (_veloType == VeloType::USER_VAL) {
         velo = userVelocity();
     }
